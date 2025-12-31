@@ -1,0 +1,30 @@
+# --- Vidéos ---
+# Exclure toutes les vidéos dans le dossier ml_models
+ml_models/*.mp4
+# Exclure tout le contenu du dossier temp_videos
+temp_videos/*
+ml_models/testvideo/*.mp4
+ml|_models/models/gmm_models
+
+# --- Résultats de tests (JSON) ---
+# Exclure les fichiers de résultats générés dans ml_models
+ml_models/result_*.json
+
+# --- Modèles et Poids (ML) ---
+# Il est souvent conseillé d'exclure les poids lourds et de les gérer via LFS ou téléchargement séparé
+*.pt
+*.pth
+yolov8n-pose.pt
+
+# --- Environnement Python ---
+venv/
+.env
+__pycache__/
+*.py[cod]
+
+# --- Base de données ---
+db.sqlite3
+
+# --- OS ---
+.DS_Store
+Thumbs.db
