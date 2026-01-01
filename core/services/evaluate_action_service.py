@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from django.conf import settings
 from .extract_keypoints import ExtractKeypointsService
-from .model_loader import load_cnn_lstm_classifier
+from .model_loader import load_cnn1d_classifier
 
 class EvaluateActionService:
     ACTION_LABELS = [
@@ -13,7 +13,7 @@ class EvaluateActionService:
     ]
 
     EXPECTED_KEYPOINTS = 17
-    INPUT_SIZE = 17 * 2  # x/y only for the CNN+LSTM
+    INPUT_SIZE = 17 * 3  # 51 features
     NUM_CLASSES = 10
     MODEL_FILE = "cnn1d_multiclass.pt"
     
@@ -25,46 +25,27 @@ class EvaluateActionService:
     ]
 
     _model_cache = None
-    _idx_to_label = None
-    _label_to_idx = None
 
     @classmethod
     def load_model(cls):
         if cls._model_cache is None:
             model_path = os.path.join(settings.BASE_DIR, "ml_models", cls.MODEL_FILE)
-            model, idx_to_label = load_cnn_lstm_classifier(
-                model_path,
-                input_dim=cls.INPUT_SIZE,
-                num_classes=cls.NUM_CLASSES,
-            )
-            cls._model_cache = model
-            if idx_to_label:
-                cls._idx_to_label = idx_to_label
-            else:
-                cls._idx_to_label = {idx: label for idx, label in enumerate(cls.ACTION_LABELS)}
-            cls._label_to_idx = {label: idx for idx, label in cls._idx_to_label.items()}
-            cls.ACTION_LABELS = [cls._idx_to_label[idx] for idx in sorted(cls._idx_to_label.keys())]
+            cls._model_cache = load_cnn1d_classifier(model_path, cls.INPUT_SIZE, cls.NUM_CLASSES)
         return cls._model_cache
-
-    @classmethod
-    def _ensure_label_maps(cls):
-        if cls._label_to_idx is None or cls._idx_to_label is None:
-            cls.load_model()
 
     @classmethod
     def _prepare_tensor(cls, kp):
         T, J, C = kp.shape
+        # On s'assure d'avoir exactement 17 points
         if J > cls.EXPECTED_KEYPOINTS:
             kp = kp[:, :cls.EXPECTED_KEYPOINTS, :]
-        tensor = torch.tensor(kp, dtype=torch.float32)
-        xy = tensor[..., :2].reshape(T, cls.INPUT_SIZE)
-        return xy.unsqueeze(0)
+        # Flatten pour le CNN1D : (1, Time, 51)
+        tensor = torch.tensor(kp, dtype=torch.float32).view(1, T, cls.INPUT_SIZE)
+        return tensor
 
     @classmethod
     def evaluate_video(cls, video_path: str, action: str):
-        cls._ensure_label_maps()
-
-        if not cls._label_to_idx or action not in cls._label_to_idx:
+        if action not in cls.ACTION_LABELS:
             return {"error": f"Action inconnue: {action}"}
 
         # 1. Extraction (Longue opération)
@@ -84,10 +65,8 @@ class EvaluateActionService:
             # Si le modèle sort (Batch, Classes), on applique Softmax
             probs = torch.softmax(logits, dim=1)
 
-        action_idx = cls._label_to_idx[action]
+        action_idx = cls.ACTION_LABELS.index(action)
         raw_prob = probs[0, action_idx].item()
-        pred_idx = torch.argmax(probs, dim=1).item()
-        predicted_action = cls._idx_to_label.get(pred_idx, "unknown")
         
         # 4. Calibrage du score "Humain"
         human_score = cls._calculate_human_score(raw_prob)
@@ -99,7 +78,6 @@ class EvaluateActionService:
 
         return {
             "action_asked": action,
-            "predicted_action": predicted_action,
             "percentage": round(human_score * 100, 1),
             "is_good_example": human_score >= 0.6,
             "quality_message": "🏆 Excellent" if human_score > 0.8 else "✅ Validé" if human_score > 0.6 else "❌ À retravailler",
