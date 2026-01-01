@@ -15,7 +15,7 @@ class EvaluateActionService:
     EXPECTED_KEYPOINTS = 17
     INPUT_SIZE = 17 * 2  # x/y only for the CNN+LSTM
     NUM_CLASSES = 10
-    MODEL_FILE = "cnn_lstm_multiclass.pt"
+    MODEL_FILE = "cnn1d_multiclass.pt"
     
     KEYPOINT_NAMES = [
         "nez", "œil_gauche", "œil_droit", "oreille_gauche", "oreille_droite",
