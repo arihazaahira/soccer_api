@@ -86,6 +86,7 @@ class EvaluateActionService:
 
     @staticmethod
     def _calculate_human_score(prob):
-        if prob < 0.1: return random.uniform(0.30, 0.45)
+        if prob > 0.1: return random.uniform(0.30, 0.40)
+        if prob < 0.1: return random.uniform(0.45, 0.55)
         if prob < 0.5: return random.uniform(0.60, 0.75)
         return random.uniform(0.75, 0.96)
