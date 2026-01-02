@@ -18,8 +18,8 @@ class EvaluateActionService:
     MODEL_FILE = "cnn1d_multiclass.pt"
     
     KEYPOINT_NAMES = [
-        "nez", "œil_gauche", "œil_droit", "oreille_gauche", "oreille_droite",
-        "épaule_gauche", "épaule_droite", "coude_gauche", "coude_droit",
+        "nez", "oeil_gauche", "oeil_droit", "oreille_gauche", "oreille_droite",
+        "epaule_gauche", "epaule_droite", "coude_gauche", "coude_droit",
         "poignet_gauche", "poignet_droit", "hanche_gauche", "hanche_droite",
         "genou_gauche", "genou_droit", "cheville_gauche", "cheville_droite"
     ]
@@ -53,16 +53,16 @@ class EvaluateActionService:
         kp = extractor.extract(video_path)
         
         if kp is None:
-            return {"error": "Aucun sujet détecté dans la vidéo"}
+            return {"error": "Aucun sujet detecte dans la video"}
 
-        # 2. Préparation Modèle
+        # 2. Preparation Modele
         model = cls.load_model()
         tensor = cls._prepare_tensor(kp)
 
-        # 3. Inférence
+        # 3. Inference
         with torch.no_grad():
             logits = model(tensor)
-            # Si le modèle sort (Batch, Classes), on applique Softmax
+            # Si le modele sort (Batch, Classes), on applique Softmax
             probs = torch.softmax(logits, dim=1)
 
         action_idx = cls.ACTION_LABELS.index(action)
@@ -71,16 +71,16 @@ class EvaluateActionService:
         # 4. Calibrage du score "Humain"
         human_score = cls._calculate_human_score(raw_prob)
         
-        # 5. Recommandations basées sur la comparaison (optionnel)
-        recs = ["✅ Action analysée avec succès"]
+        # 5. Recommandations basees sur la comparaison (optionnel)
+        recs = ["Action analysee avec succes"]
         if human_score < 0.6:
-            recs = ["🏃 Améliorez votre posture", "⚽ Gardez un mouvement fluide"]
+            recs = ["Ameliorez votre posture", "Gardez un mouvement fluide"]
 
         return {
             "action_asked": action,
             "percentage": round(human_score * 100, 1),
             "is_good_example": human_score >= 0.6,
-            "quality_message": "🏆 Excellent" if human_score > 0.8 else "✅ Validé" if human_score > 0.6 else "❌ À retravailler",
+            "quality_message": "Excellent" if human_score > 0.8 else "Valide" if human_score > 0.6 else "A retravailler",
             "recommendations": recs
         }
 
