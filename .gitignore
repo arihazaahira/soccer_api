@@ -12,8 +12,8 @@ ml_models/result_*.json
 
 # --- Modèles et Poids (ML) ---
 # Il est souvent conseillé d'exclure les poids lourds et de les gérer via LFS ou téléchargement séparé
-*.pt
-*.pth
+
+
 yolov8n-pose.pt
 
 # --- Environnement Python ---
